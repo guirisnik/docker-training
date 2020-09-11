@@ -1,3 +1,6 @@
+# Exercícios
+Se quiser praticar com outros exercícios além dos que eu já coloquei aqui, existe uma [plataforma da KodeKloud](https://www.kodekloud.com/p/docker-labs) com quizzes em que você pode testar ideias e aprender um pouco mais sobre Docker
+
 # Objetivos
 
 - Parte 1
@@ -9,8 +12,17 @@
 - Parte 2
   - Como instalar
   - Comandos
-    - run
-  - Como executar um container
+    - `run`
+      - Algumas opções do comando `run`
+    - `ps`
+    - `stop`
+    - `rm`
+    - `images`
+    - `rmi`
+    - `pull`
+  - Volumes
+    - Como criar um volume
+    - Como vincular um volume a um container
   - Criar uma imagem personalizada
   - Redes em Docker
   - Docker Compose
@@ -33,7 +45,7 @@ Assim, utilizando Docker, é possível criar containers distintos para cada um d
 ## O que são containers?
 São ambientes isolados dentro do mesmo sistema operacional, cada um tendo seus próprios processos e redes, mas compartilhando do mesmo Kernel, provido pelo sistema operacional.
 
-> Mas Gui, esse treco é novo? 
+> Mas Gui, esse treco é novo?
 
 ---
 ---
@@ -213,6 +225,27 @@ Status: Downloaded newer image for nginx:latest
 
 E verá que seu terminal agora está travado. Isso significa que o container está sendo executado.
 
+Se quiser testar o servidor, por padrão, a porta que é exposta é a `8080`, então acessando [http://localhost:8080](http://localhost:8080) você deve ver a página padrão dele.
+
+> Gui, por que você diz _executar_ um container?
+
+```
+[INFO]
+
+Diferente de uma máquina virtual que normalmente dizemos _subir_ uma máquina virtual, que seria o equivalente a ligar um computador, um container não possui o mesmo ciclo de vida.
+
+Containers não foram feitos para permanecerem ativos o tempo inteiro como é o caso de um sistema operacional, mas sim para _executar_ uma determinada tarefa, como hospedar um servidor para um site ou um banco de dados. Uma vez que esta tarefa ou _processo_ termina sua execução, então o container também termina sua execução.
+```
+
+#### Algumas opções do comando `run`
+- `-d` : Executa o container no background e não trava o terminal;
+- `-e` : Especifica uma variável de ambiente a ser adicionada ao container;
+- `-i` : Executa o container em modo interativo;
+- `-p` : Expõe uma porta para se comunicar com o sistema operacional;
+- `--rm` : Remove o container automaticamente quando o processo termina;
+- `-v` : Vincula um _volume_ ao container.
+
+
 ### `ps`
 
 Sem terminar a execução do container que instanciamos na seção anterior, vamos utilizar o comando
@@ -221,7 +254,14 @@ Sem terminar a execução do container que instanciamos na seção anterior, vam
 docker ps
 ```
 
-que irá nos mostrar a lista de containers em execução naquele momento. Para ver a lista de todos os containers, incluindo aqueles que não estão sendo executados no momento, inclua a opção `-a` no comando, assim:
+que irá nos mostrar a lista de containers em execução naquele momento. Você deve ver algo parecido com isso aqui
+
+```bash
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS               NAMES
+68de78444e12        nginx               "/docker-entrypoint.…"   About an hour ago   Up About an hour    80/tcp              jolly_herschel
+```
+
+Para ver a lista de todos os containers, incluindo aqueles que não estão sendo executados no momento, inclua a opção `-a` no comando, assim:
 
 ```bash
 docker ps -a
@@ -231,12 +271,138 @@ docker ps -a
 
 O comando `stop` é utilizado para interromper a execução de um container dado especificado por um `ID` ou pelo nome, ambos os quais podem ser obtidos pelo comando `docker ps`.
 
+Assim, no meu caso, de acordo com o retorno do comando eu deveria usar
+
+```bash
+docker stop jolly_herschel
+# ou
+docker stop 68
+```
+
+Nesse caso o `ID` não precisa ser informado na íntegra que o Docker já consegue identificar a qual container o comando se refere.
+
+Note que quando usamos o comando `stop` não estamos deletando o container, apenas interrompendo sua execução, o que significa que se utilizarmos o comando `ps` com a opção `-a`, devemos ver o container na lista com o status `Exited`.
+
+> Mas Gui, e se eu quiser remover esse container?
+
+### `rm`
+
+Para isso utilizamos o comando `rm`
+
+```bash
+docker rm jolly_herschel
+```
+
+Porém, isso remove apenas o container, que, como já vimos, é uma instância de uma imagem. E se quiséssemos remover a imagem? Ou mesmo obter uma lista das imagens disponíveis?
+
+### `images`
+
+Para ver a lista de imagens disponíveis localmente basta usar
+
+```bash
+docker images
+```
+
+e você deve ver algo parecido isso
+
+```bash
+REPOSITORY                                  TAG                 IMAGE ID            CREATED             SIZE
+nginx                                       latest              4bb46517cac3        3 weeks ago         133MB
+docker/whalesay                             latest              6b362a9f73eb        5 years ago         247MB
+
+```
+
+### `rmi`
+
+Para remover uma imagem, da mesma forma como vimos para containers, devemos usar o comando `rmi`. Por exemplo, para remover a imagem do servidor `nginx` que baixamos, basta usar o comando
+
+```bash
+docker rmi nginx
+```
+---
+**Importante**
+
+Para conseguir remover uma imagem é precisa garantir que nenhum container que use aquela imagem exista!
+---
+
+### `pull`
+
+Quando vimos o comando `run`, a imagem do servidor `nginx` foi baixada automaticamente, já que ela não existia ainda no computador. Porém, se quiséssemos apenas baixar a imagem sem executá-la, usaríamos o comando `pull`
+
+```bash
+docker pull nginx
+```
 
 ---
 ---
-## Como executar um container
+
+## Gerenciar Dados
+Por padrão, containers são processos sem persistência de dados. Isso significa que qualquer alteração feita nos arquivos dentro de um container não é mantida entre execuções.
+
+Porém, existem algumas formas de gerar persistência de dados, sendo as mais comuns usando _volumes_ ou _bind mounts_, que são entidades independentes do container para armazenar dados sobre o que acontece dentro de um container.
+
+A principal diferença entre _volumes_ e _bind mounts_ é que o primeiro é gerenciado pela aplicação do Docker, como se fosse um banco de dados; já o segundo é literalmente a especificação de um local na sua máquina para onde os arquivos serão destinados.
+
+Algumas vantagens do uso de volumes/bind mounts:
+- Quer excluir um container? À vontade, seus dados estarão salvos no volume associado.
+- Quer migrar um container? Simples, apenas leve o volume para o novo local e a imagem do container associado.
+- Quer compartilhar um volume entre vários containers? Fácil, apenas associe o mesmo volume quando executar os diferentes containers.
+
+### Bind mounts
+Como já mencionado, _bind mounts_ são apenas locais na sua máquina que servirão para armazenar arquivos utilizados pelo container.
+
+A maneira de associar um _bind mount_ a um container é com a opção `--mount`. Por exemplo:
+
+```bash
+mkdir minha-pasta-favorita
+
+docker run -it \
+--mount type=bind,source="$(pwd)"/minha-pasta-favorita,target=/home \
+ubuntu:latest
+```
+
+> Obs.: `pwd` é uma função em bash que significa `print working directory`, utilizada para abreviar o caminho até o diretório em que se está trabalhando naquele momento no terminal.
+
+O que o comando acima irá fazer é executar um container com a imagem do `Ubuntu` (a tag `latest` significa que estamos utilizando a versão mais atual disponível) em modo interativo (opção `-it`) e estamos _montando_ um vínculo entre uma pasta chamada `minha-pasta-favorita` e a pasta de destino dentro do container `home`.
+
+Para testar o vínculo, podemos criar um arquivo qualquer (tanto dentro do container como fora dele, tanto faz) e verificar que o arquivo irá aparecer em ambas as pastas. Por exemplo:
+
+```bash
+cd minha-pasta-favorita && touch meu-arquivo-favorito
+```
+
+Executando o comando acima você irá criar um arquivo dentro de `minha-pasta-favorita` chamado `meu-arquivo-favorito`. Agora dentro do container, olhando para a pasta `home`, você deverá ver que existe lá também uma cópia do `meu-arquivo-favorito`.
+
+```bash
+cd /home
+ll
+```
+
+A saída do comando acima deve ser algo parecido com isso:
+
+```bash
+drwxr-xr-x 2 1000 1000 4096 Sep 11 19:53 ./
+drwxr-xr-x 1 root root 4096 Sep 11 19:48 ../
+-rw-r--r-- 1 1000 1000    0 Sep 11 19:53 meu-arquivo-favorito
+```
+
 ---
 ---
+### Volumes
+Para utilizar volumes é preciso primeiro criar um, o que é feito utilizando o comando
+
+```bash
+docker volume create nome-do-seu-volume
+```
+
+e, para vincular o volume a um container, basta utilizar a opção `-v` ou `--volume`
+
+```bash
+docker run -it \
+--volume nome-do-seu-volume:/home \
+ubuntu:latest
+```
+
 ## Criar uma imagem personalizada
 ---
 ---
