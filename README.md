@@ -203,10 +203,12 @@ Aqui vou passar uma lista dos comandos mais utilizados com Docker.
 O comando `run` é usado para executar um container a partir de uma imagem. Por exemplo, se quiséssemos executar uma instância de um servidor `nginx`, basta usar o comando
 
 ```bash
-docker run nginx
+docker run nginx:latest
 ```
 
-Na primeira vez que fizer isso, provavelmente você não terá a imagem do `nginx` no seu computador, então o Docker vai te responder que não conseguiu localizar a imagem que foi requisitada, mas que irá baixá-la da biblioteca.
+Na primeira vez que fizer isso, provavelmente você não terá a imagem do `nginx` no seu computador, então o Docker vai te responder que não conseguiu localizar a imagem que foi requisitada, mas que irá baixá-la da biblioteca. 
+
+Além disso, note que adicionamos `:latest` ao nome da imagem. Isso é uma `tag`, que identifica a versão da imagem que queremos usar para executar nosso container. Por padrão, a imagem mais recente é utilizada, então você pode omitir a `tag` que o Docker irá auto completar para `:latest`.
 
 > Gui, que raio de biblioteca é essa?
 
@@ -227,6 +229,16 @@ E verá que seu terminal agora está travado. Isso significa que o container est
 
 Se quiser testar o servidor, por padrão, a porta que é exposta é a `8080`, então acessando [http://localhost:8080](http://localhost:8080) você deve ver a página padrão dele.
 
+Se quiser expor uma porta diferente, use a opção `-p` quando executar o container. Por exemplo, se quisermos conectar a porta 5000 do nosso pc ao servidor nginx, usaríamos o comando
+
+```bash
+docker run -p 5000:80 nginx
+```
+
+Note que dessa vez não especificamos a `tag`, já que, como mencionado anteriormente, o Docker auto completa isso para nós com `:latest`.
+
+Bem, agora, para testar o servidor, a porta vinculada é a 5000, então para acessar o servidor devemos acessar o endereço [http://localhost:5000](http://localhost:5000).
+
 > Gui, por que você diz _executar_ um container?
 
 ```
@@ -239,9 +251,11 @@ Containers não foram feitos para permanecerem ativos o tempo inteiro como é o 
 
 #### Algumas opções do comando `run`
 - `-d` : Executa o container no background e não trava o terminal;
-- `-e` : Especifica uma variável de ambiente a ser adicionada ao container;
+- `-e` : Especifica uma variável de ambiente a ser adicionada ao container no padrão `VARIAVEL`=`valor`;
 - `-i` : Executa o container em modo interativo;
-- `-p` : Expõe uma porta para se comunicar com o sistema operacional;
+- `-t` : Vincula o terminal do container à sua máquina;
+- `-it` : Executa o container em modo interativo com o terminal vinculado;
+- `-p` : Vincula uma porta do seu pc com uma porta do container no padrão `porta-do-seu-pc`:`porta-do-container`;
 - `--rm` : Remove o container automaticamente quando o processo termina;
 - `-v` : Vincula um _volume_ ao container.
 
